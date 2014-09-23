@@ -17,7 +17,8 @@ import (
 	"runtime"
 	"strings"
 
-	"code.google.com/p/go.tools/imports"
+	//"code.google.com/p/go.tools/imports"
+	"github.com/athom/go.tools/imports"
 )
 
 var (
@@ -25,12 +26,14 @@ var (
 	list   = flag.Bool("l", false, "list files whose formatting differs from goimport's")
 	write  = flag.Bool("w", false, "write result to (source) file instead of stdout")
 	doDiff = flag.Bool("d", false, "display diffs instead of rewriting files")
+	server = flag.Bool("s", false, "run as a daemon server")
 
 	options = &imports.Options{
 		TabWidth:  8,
 		TabIndent: true,
 		Comments:  true,
 		Fragment:  true,
+		Daemon:    true,
 	}
 	exitCode = 0
 )
@@ -138,6 +141,10 @@ func main() {
 func gofmtMain() {
 	flag.Usage = usage
 	flag.Parse()
+	if *server {
+		imports.RunServer()
+		return
+	}
 
 	if options.TabWidth < 0 {
 		fmt.Fprintf(os.Stderr, "negative tabwidth %d\n", options.TabWidth)

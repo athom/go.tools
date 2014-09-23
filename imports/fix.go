@@ -162,16 +162,16 @@ func importPathToNameGoPath(importPath string) (packageName string) {
 	}
 }
 
-type pkg struct {
-	importpath string // full pkg import path, e.g. "net/http"
-	dir        string // absolute file path to pkg directory e.g. "/usr/lib/go/src/fmt"
+type Pkg struct {
+	Importpath string // full pkg import path, e.g. "net/http"
+	Dir        string // absolute file path to pkg directory e.g. "/usr/lib/go/src/fmt"
 }
 
 var pkgIndexOnce sync.Once
 
 var pkgIndex struct {
 	sync.Mutex
-	m map[string][]pkg // shortname => []pkg, e.g "http" => "net/http"
+	m map[string][]Pkg // shortname => []pkg, e.g "http" => "net/http"
 }
 
 // gate is a semaphore for limiting concurrency.
@@ -186,7 +186,7 @@ var fsgate = make(gate, 8)
 
 func loadPkgIndex() {
 	pkgIndex.Lock()
-	pkgIndex.m = make(map[string][]pkg)
+	pkgIndex.m = make(map[string][]Pkg)
 	pkgIndex.Unlock()
 
 	var wg sync.WaitGroup
@@ -260,13 +260,12 @@ func loadPkg(wg *sync.WaitGroup, root, pkgrelpath string) {
 	if hasGo {
 		shortName := importPathToName(importpath)
 		pkgIndex.Lock()
-		pkgIndex.m[shortName] = append(pkgIndex.m[shortName], pkg{
-			importpath: importpath,
-			dir:        dir,
+		pkgIndex.m[shortName] = append(pkgIndex.m[shortName], Pkg{
+			Importpath: importpath,
+			Dir:        dir,
 		})
 		pkgIndex.Unlock()
 	}
-
 }
 
 // loadExports returns a list exports for a package.
@@ -316,8 +315,11 @@ func findImportGoPath(pkgName string, symbols map[string]bool) (string, bool, er
 	// local directory, since the user is likely to import the same packages
 	// in the current Go file.  Return rename=true when the other Go files
 	// use a renamed package that's also used in the current file.
-
-	pkgIndexOnce.Do(loadPkgIndex)
+	if gClient != nil {
+		pkgIndexOnce.Do(gClient.fetchPkgIndex)
+	} else {
+		pkgIndexOnce.Do(loadPkgIndex)
+	}
 
 	// Collect exports for packages with matching names.
 	var wg sync.WaitGroup
@@ -336,7 +338,7 @@ func findImportGoPath(pkgName string, symbols map[string]bool) (string, bool, er
 				pkgs[importpath] = exports
 				pkgsMu.Unlock()
 			}
-		}(pkg.importpath, pkg.dir)
+		}(pkg.Importpath, pkg.Dir)
 	}
 	pkgIndex.Unlock()
 	wg.Wait()

@@ -27,6 +27,7 @@ import (
 type Options struct {
 	Fragment  bool // Accept fragment of a source file (no package statement)
 	AllErrors bool // Report all errors (not just the first 10 on different lines)
+	Daemon    bool
 
 	Comments  bool // Print comments (true if nil *Options provided)
 	TabIndent bool // Use tabs for indent (true if nil *Options provided)
@@ -44,6 +45,10 @@ func Process(filename string, src []byte, opt *Options) ([]byte, error) {
 	file, adjust, err := parse(fileSet, filename, src, opt)
 	if err != nil {
 		return nil, err
+	}
+
+	if opt.Daemon {
+		gClient = newRpcClient()
 	}
 
 	_, err = fixImports(fileSet, file)
