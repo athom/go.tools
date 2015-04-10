@@ -52,8 +52,8 @@ func RunServer() int {
 	rpc.Register(new(RPC))
 
 	// scan GOPATH for changes
-	fm := newFilesMonitor()
-	fm.Monitor()
+	//fm := newFilesMonitor()
+	//fm.Monitor()
 
 	// serv rpc
 	g_daemon.loop()
